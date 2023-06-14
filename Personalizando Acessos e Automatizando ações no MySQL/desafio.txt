@@ -1,0 +1,75 @@
+-- Número de empregados por departamento e localidade
+
+CREATE VIEW empregados_por_departamento_localidade AS
+SELECT d.department_name, d.location_id, COUNT(e.employee_id) AS numero_empregados
+FROM departments d
+JOIN employees e ON d.department_id = e.department_id
+GROUP BY d.department_name, d.location_id;
+
+
+-- Lista de departamentos e seus gerentes
+
+CREATE VIEW departamentos_gerentes AS
+SELECT d.department_name, e.first_name, e.last_name
+FROM departments d
+JOIN employees e ON d.manager_id = e.employee_id;
+
+
+-- Projetos com maior número de empregados (por ordenação decrescente)
+
+CREATE VIEW projetos_maior_numero_empregados AS
+SELECT p.project_name, COUNT(pe.employee_id) AS numero_empregados
+FROM projects p
+JOIN project_employees pe ON p.project_id = pe.project_id
+GROUP BY p.project_name
+ORDER BY COUNT(pe.employee_id) DESC;
+
+
+-- Lista de projetos, departamentos e gerentes
+
+CREATE VIEW projetos_departamentos_gerentes AS
+SELECT p.project_name, d.department_name, e.first_name, e.last_name
+FROM projects p
+JOIN departments d ON p.department_id = d.department_id
+JOIN employees e ON d.manager_id = e.employee_id;
+
+
+-- Quais empregados possuem dependentes e se são gerentes
+
+CREATE VIEW empregados_dependentes_gerentes AS
+SELECT e.first_name, e.last_name, COUNT(d.dependent_id) AS numero_dependentes, 
+       CASE WHEN e.employee_id IN (SELECT manager_id FROM departments) THEN 'Sim' ELSE 'Não' END AS gerente
+FROM employees e
+LEFT JOIN dependents d ON e.employee_id = d.employee_id
+GROUP BY e.first_name, e.last_name;
+
+-- definir as permissões de acesso às views para os diferentes usuários
+
+-- Criar o usuário gerente com acesso às informações de employee e departamento
+
+CREATE USER 'gerente'@'localhost' IDENTIFIED BY 'senha_gerente';
+GRANT SELECT ON employees TO 'gerente'@'localhost';
+GRANT SELECT ON departments TO 'gerente'@'localhost';
+
+-- Criar o usuário employee sem acesso às informações de departamento e gerente
+
+CREATE USER 'employee'@'localhost' IDENTIFIED BY 'senha_employee';
+GRANT SELECT ON employees TO 'employee'@'localhost';
+
+-- Gatilho de remoção (before delete) para salvar informações de usuários excluídos
+
+CREATE TRIGGER salvar_usuario_removido BEFORE DELETE ON users
+FOR EACH ROW
+BEGIN
+    INSERT INTO usuarios_removidos (user_id, username, data_remocao)
+    VALUES (OLD.user_id, OLD.username, NOW());
+END;
+
+-- Gatilho de atualização (before update) para registrar alterações de salário base
+
+CREATE TRIGGER registrar_alteracao_salario BEFORE UPDATE ON employees
+FOR EACH ROW
+BEGIN
+    INSERT INTO alteracoes_salario (employee_id, salario_antigo, salario_novo, data_alteracao)
+    VALUES (OLD.employee_id, OLD.base_salary, NEW.base_salary, NOW());
+END;

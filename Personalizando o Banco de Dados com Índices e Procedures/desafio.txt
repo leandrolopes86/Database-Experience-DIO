@@ -1,0 +1,50 @@
+-- Qual o departamento com maior número de pessoas?
+-- Índice: department_num_employees_index
+-- Tipo: Índice B-Tree
+-- Motivo: Para otimizar a consulta que busca o departamento com maior número de pessoas
+CREATE INDEX department_num_employees_index ON employees (department_id, employee_id);
+
+-- Quais são os departamentos por cidade?
+-- Índice: department_city_index
+-- Tipo: Índice B-Tree
+-- Motivo: Para otimizar a consulta que recupera os departamentos por cidade
+CREATE INDEX department_city_index ON departments (location_id, department_name);
+
+--Relação de empregados por departamento
+
+-- Índice: employees_department_index
+-- Tipo: Índice B-Tree
+-- Motivo: Para otimizar a consulta que lista os empregados por departamento
+CREATE INDEX employees_department_index ON employees (department_id, last_name, first_name);
+
+
+-- Utilização de procedures para manipulação de dados em Banco de Dados
+DELIMITER //
+
+CREATE PROCEDURE manipulate_data(IN action INT, IN id INT, IN name VARCHAR(255))
+BEGIN
+    -- Seleção de dados
+    IF action = 1 THEN
+        SELECT * FROM tabela WHERE id = id;
+    
+    -- Atualização de dados
+    ELSEIF action = 2 THEN
+        UPDATE tabela SET name = name WHERE id = id;
+    
+    -- Remoção de dados
+    ELSEIF action = 3 THEN
+        DELETE FROM tabela WHERE id = id;
+    
+    -- Ação inválida
+    ELSE
+        SELECT 'Ação inválida!';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- chamar a procedure e manipular os dados
+CALL manipulate_data(1, 1, ''); -- Seleciona dados do registro com ID 1
+CALL manipulate_data(2, 2, 'Novo nome'); -- Atualiza o nome do registro com ID 2
+CALL manipulate_data(3, 3, ''); -- Remove o registro com ID 3
+CALL manipulate_data(4, 4, ''); -- Retorna "Ação inválida!"
